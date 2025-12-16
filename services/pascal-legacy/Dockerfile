@@ -1,10 +1,38 @@
-FROM debian:12-slim
+FROM frolvlad/alpine-pascal:latest
 
-RUN apt-get update && apt-get install -y --no-install-recommends     fp-compiler postgresql-client ca-certificates     && rm -rf /var/lib/apt/lists/*
+# Установка зависимостей
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    bash \
+    curl \
+    tzdata
 
-WORKDIR /opt/legacy
-COPY legacy.pas ./
-COPY run.sh /usr/local/bin/run_legacy.sh
-RUN chmod +x /usr/local/bin/run_legacy.sh
+# Установка Python библиотек
+RUN pip3 install pandas openpyxl xlsxwriter
 
-CMD ["/usr/local/bin/run_legacy.sh"]
+# Создание структуры каталогов
+RUN mkdir -p /app /data/csv /data/xlsx /data/logs
+
+WORKDIR /app
+
+# Копирование исходных файлов
+COPY legacy_improved.pas /app/
+COPY run_improved.sh /app/
+
+# Компиляция программы
+RUN fpc legacy_improved.pas -O2 -Xs -olegacy_generator
+
+# Установка прав
+RUN chmod +x /app/legacy_generator /app/run_improved.sh
+
+# Настройка времени
+ENV TZ=Europe/Moscow
+
+# Переменные окружения
+ENV GEN_PERIOD_SEC=300
+ENV CSV_OUT_DIR=/data/csv
+ENV LOG_DIR=/data/logs
+
+# Точка входа
+CMD ["/app/run_improved.sh"]
