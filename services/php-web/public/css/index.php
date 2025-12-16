@@ -1,0 +1,1 @@
+"<?php echo '<h1>Cassiopeia работает!</h1><p>PHP работает на Docker!</p>'; ?>"C:\cassiopeia-optimized

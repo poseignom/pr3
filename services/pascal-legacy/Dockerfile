@@ -1,38 +1,34 @@
-FROM frolvlad/alpine-pascal:latest
+FROM alpine:3.18
 
-# Установка зависимостей
+# Установка Free Pascal и зависимостей
 RUN apk add --no-cache \
+    freepascal \
+    postgresql-client \
     python3 \
     py3-pip \
     bash \
     curl \
     tzdata
 
-# Установка Python библиотек
+# Установка Python библиотек для XLSX
 RUN pip3 install pandas openpyxl xlsxwriter
 
-# Создание структуры каталогов
-RUN mkdir -p /app /data/csv /data/xlsx /data/logs
-
+# Создание рабочей директории
 WORKDIR /app
 
 # Копирование исходных файлов
+COPY legacy.pas /app/
+COPY run.sh /app/
 COPY legacy_improved.pas /app/
-COPY run_improved.sh /app/
 
-# Компиляция программы
+# Компиляция Pascal программы
 RUN fpc legacy_improved.pas -O2 -Xs -olegacy_generator
 
 # Установка прав
-RUN chmod +x /app/legacy_generator /app/run_improved.sh
-
-# Настройка времени
-ENV TZ=Europe/Moscow
+RUN chmod +x /app/legacy_generator /app/run.sh
 
 # Переменные окружения
-ENV GEN_PERIOD_SEC=300
-ENV CSV_OUT_DIR=/data/csv
-ENV LOG_DIR=/data/logs
+ENV TZ=Europe/Moscow
 
 # Точка входа
-CMD ["/app/run_improved.sh"]
+CMD ["/app/run.sh"]

@@ -1,0 +1,64 @@
+services:
+  # PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: cassiopeia_db
+    environment:
+      POSTGRES_DB: cassiopeia
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: cassiopeia_redis
+    ports:
+      - "6379:6379"
+
+  # PHP/Laravel
+  php:
+    build: ./services/php-web
+    container_name: cassiopeia_php
+    depends_on:
+      - db
+      - redis
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: cassiopeia
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWST_HOST: https://api.jwstapi.com
+      JWST_API_KEY: baa96cdf-4a82-45f1-b986-d10a96826442
+      JWST_EMAIL: burnfeniks@yandex.ru
+      ASTRO_APP_ID: 745a5e07-70ae-49fc-8014-6a509551f829
+      ASTRO_APP_SECRET: fe85a6503e3dd694a5d888effb336aefbbb5f54f348a134bd84126de5f69f536c5f05e75a55d395f41ae789b037bed48b7a505a690637acbf2108f5aefe3d934e0ab7b23bf469552d5eb6fc428f8ea981b02323cf3f6ec996ad7b6eab8312f786fd8c25eafc22cea532030c8dc3749c4
+    volumes:
+      - ./services/php-web:/var/www/html
+
+  # Nginx с правильным форматом портов
+  nginx:
+    image: nginx:alpine
+    container_name: cassiopeia_nginx
+    depends_on:
+      - php
+    ports:
+      - "8081:80"
+    volumes:
+      - ./services/php-web/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./services/php-web:/var/www/html:ro
+
+  # Упрощенный Pascal
+  pascal:
+    image: alpine:3.18
+    container_name: cassiopeia_pascal
+    command: sh -c "apk add --no-cache python3 && echo 'CSV генерация отключена' && tail -f /dev/null"
+    volumes:
+      - ./data:/data
