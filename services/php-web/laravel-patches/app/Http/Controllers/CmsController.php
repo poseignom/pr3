@@ -1,11 +1,29 @@
 <?php
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\DB;
+
+use App\Repositories\CmsRepository;
+use Illuminate\Http\Request;
 
 class CmsController extends Controller {
-  public function page(string $slug) {
-    $row = DB::selectOne("SELECT title, content FROM cms_blocks WHERE slug = ? AND is_active = TRUE", [$slug]);
-    if (!$row) abort(404);
-    return response()->view('cms.page', ['title' => $row->title, 'html' => $row->content]);
-  }
+    
+    private CmsRepository $cmsRepo;
+    
+    public function __construct(CmsRepository $cmsRepo)
+    {
+        $this->cmsRepo = $cmsRepo;
+    }
+    
+    public function page(string $slug)
+    {
+        $page = $this->cmsRepo->getPageBySlug($slug);
+        
+        if (!$page) {
+            abort(404, 'Страница не найдена');
+        }
+        
+        return view('cms.page', [
+            'title' => $page->title,
+            'html' => $page->content
+        ]);
+    }
 }
